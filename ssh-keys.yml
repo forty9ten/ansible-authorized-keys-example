@@ -1,0 +1,20 @@
+---
+- hosts: [web, db]
+  tasks:
+    - shell: rm -rf /tmp/*.authorized_keys
+
+    - name: create user and add ssh key to authorized
+      user: name=aaronfeng
+
+    - name: create user and add ssh key to authorized
+      user: name=thomas-holmes
+
+    - name: dowanload ssh key from github
+      get_url: url=https://github.com/thomas-holmes.keys dest=/tmp/thomas-holmes.authorized_keys
+
+    - name: dowanload ssh key from github
+      get_url: url=https://github.com/aaronfeng.keys dest=/tmp/aaronfeng.authorized_keys
+
+    - name: setup authorized key
+      authorized_key: user=aaronfeng key="{{ lookup('file', '/tmp/aaronfeng.authorized_keys') }}"
+      authorized_key: user=thomas-holmes key="{{ lookup('file', '/tmp/thomas-holmes.authorized_keys') }}"

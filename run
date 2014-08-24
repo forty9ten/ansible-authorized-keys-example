@@ -1,0 +1,56 @@
+#!/bin/bash
+
+set -e
+
+if hash boot2docker 2>/dev/null; then
+  if [[ $(boot2docker status) != "running" ]]; then
+    boot2docker up
+    boot2docker ssh "su -c 'tce-load -wi rsync' tc"
+  fi
+
+  rsync -avz -e "ssh -i $HOME/.ssh/id_boot2docker -p 2022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+        . docker@localhost:~/ansible  \
+        --exclude=.git --exclude=bin
+fi
+
+docker build -t forty9ten-ssh-container .
+
+# clean up for idempotency
+running=$(docker ps | grep forty9ten-ssh | cut -d' ' -f1)
+docker stop $running
+docker rm $running
+
+# start up containers
+docker run -dit --name web1 forty9ten-ssh-container
+docker run -dit --name web2 forty9ten-ssh-container
+docker run -dit --name db1  forty9ten-ssh-container
+docker run -dit --name db2  forty9ten-ssh-container
+
+# get all container ids and strip out the first line
+ids=$(docker ps | grep forty9ten-ssh | cut -d' ' -f1 | tail -n +1)
+
+# generate ansible inventory
+cat << EOF > ./inventory
+[web]
+`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ${CID} web1` ansible_ssh_user=root ansible_ssh_pass=changeme
+`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ${CID} web2` ansible_ssh_user=root ansible_ssh_pass=changeme
+
+[db]
+`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ${CID} db1` ansible_ssh_user=root ansible_ssh_pass=changeme
+`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ${CID} db2` ansible_ssh_user=root ansible_ssh_pass=changeme
+EOF
+
+echo
+echo "# ansible inventory"
+cat ./inventory
+
+# sync inventory back
+if hash boot2docker 2>/dev/null; then
+  rsync -avz -e "ssh -i $HOME/.ssh/id_boot2docker -p 2022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+        . docker@localhost:~/ansible  \
+        --exclude=.git --exclude=bin
+
+  rsync -avz -e "ssh -i $HOME/.ssh/id_boot2docker -p 2022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+        ~/.ssh docker@localhost:~/.ssh/
+fi
+

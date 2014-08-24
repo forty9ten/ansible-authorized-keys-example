@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+
+docker run -it --rm -v /home/docker/ansible:/data dockerfile/ansible ansible-playbook -i inventory ssh-keys.yml -c paramiko
