@@ -17,8 +17,14 @@ docker build -t forty9ten-ssh-container .
 
 # clean up for idempotency
 running=$(docker ps | grep forty9ten-ssh | cut -d' ' -f1)
-docker stop $running
-docker rm $running
+
+if [ -z $running ]
+then
+  echo "no containers are running."
+else
+  docker stop $running
+  docker rm $running
+fi
 
 # start up containers
 docker run -dit --name web1 forty9ten-ssh-container
