@@ -2,4 +2,11 @@
 
 set -e
 
-docker run -it --rm -v /home/docker/ansible:/data -e ANSIBLE_HOST_KEY_CHECKING=false dockerfile/ansible ansible-playbook -i inventory ssh-keys.yml -c paramiko
+DIR=`pwd`
+
+if hash boot2docker 2>/dev/null; then
+  DIR="/home/docker/ansible"
+  docker run -it --rm -v $DIR:/data -e ANSIBLE_HOST_KEY_CHECKING=false dockerfile/ansible ansible-playbook -i inventory ssh-keys.yml -c paramiko
+else
+  docker run -it --rm -v $DIR:/data -e ANSIBLE_HOST_KEY_CHECKING=false dockerfile/ansible ansible-playbook -i inventory ssh-keys.yml -c paramiko
+fi
