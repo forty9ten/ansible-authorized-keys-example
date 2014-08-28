@@ -10,9 +10,11 @@
       user: name=thomas-holmes
 
     - name: dowanload ssh key from github
+      delegate_to: 127.0.0.1
       get_url: url=https://github.com/thomas-holmes.keys dest=/tmp/thomas-holmes.authorized_keys
 
     - name: dowanload ssh key from github
+      delegate_to: 127.0.0.1
       get_url: url=https://github.com/aaronfeng.keys dest=/tmp/aaronfeng.authorized_keys
 
     - name: setup authorized key
